@@ -38,23 +38,29 @@ typedef struct {
 __global__ void kernel() {}
 
 int main(int argc, char* argv[]) {
+  constexpr int BUFFER_SIZE = 1024;
+
   int nGPUs;
   CUDA_MUST(cudaGetDeviceCount(&nGPUs));
 
   if (nGPUs == 0) {
 	  std::cerr << "No devices found!\n";
 	  exit(EXIT_FAILURE);
+  } else {
+	std::cout << nGPUs << " devices!" << std::endl;
   }
+
+  // Data that will be on each gpu
+  std::vector<std::vector<double>> test_data(nGPUs, std::vector<double>(BUFFER_SIZE, 1.0));
+  std::vector<double> test_results(nGPUs);
+  std::cout << "Allocated host data" << std::endl;
 
   // associate all devices with rank 0
   std::vector<ncclComm_t> comms(nGPUs);
   std::vector<int> devList(nGPUs, 0); 
-  auto result = ncclCommInitAll(&comms[0], nGPUs, &devList[0]);
-  if (result != ncclSuccess) {
-    std::cerr << "Error in ncclCommInitAll\n";
-  }
+  NCCL_MUST(ncclCommInitAll(&comms[0], nGPUs, &devList[0]));
+  std::cout << "Initialized communicators." << std::endl;
 
-  constexpr int BUFFER_SIZE = 1024;
 
   // Create buffers on GPUs
   std::vector<GPUBuffer> GPUBuffers(nGPUs);
@@ -63,11 +69,22 @@ int main(int argc, char* argv[]) {
 	  CUDA_MUST(cudaStreamCreate(&buf.stream_));
 	  CUDA_MUST(cudaSetDevice(dev));
 	  CUDA_MUST(cudaMalloc(&buf.send_, BUFFER_SIZE));
-	  CUDA_MUST(cudaMalloc(&buf.recv_, 1)); // for reduce
+	  CUDA_MUST(cudaMalloc(&buf.recv_, 1)); // one value for all-reduce
   }
+  std::cout << "Created buffers" << std::endl;
 
-  // Allocate data and issue work to each GPU's
-  // perDevStream to populate the sendBuffs.
+  // Copy test data to GPUs
+  for (auto i = 0; i < GPUBuffers.size(); ++i) {
+    auto &buf = GPUBuffers[i];
+    fprintf(stderr, "%d) %p <--(%lu)-- %p\n", i, buf.send_, test_data[i].size(), &test_data[i][0]);
+    CUDA_MUST(cudaSetDevice(i));
+    CUDA_MUST(cudaMemcpy(buf.send_, 
+			 &test_data[i][0], 
+			 sizeof(double)*test_data[i].size(), 
+			 cudaMemcpyHostToDevice)
+	     );
+  }
+  std::cout << "Copied H2D" << std::endl;
 
   for(int i=0; i<nGPUs; ++i) {
     cudaSetDevice(i); // Correct device must be set
@@ -77,7 +94,21 @@ int main(int argc, char* argv[]) {
         ncclDouble, ncclSum, comms[i], buf.stream_);
   }
 
-  // Issue work into data[*].stream to consume buffers, etc.
+  // Check results!
+  for (auto i = 0; i < GPUBuffers.size(); ++i) {
+    auto &buf = GPUBuffers[i];
+    CUDA_MUST(cudaSetDevice(i));
+    CUDA_MUST(cudaMemcpy(&test_results[i],
+			 buf.recv_, 
+			 sizeof(double), 
+			 cudaMemcpyDeviceToHost)
+	     );
+  }
+
+  for (const auto &e : test_results) {
+	  std::cout << e << " ";
+  }
+  std::cout <<std::endl;
 
 
   for (auto &buf : GPUBuffers) {
