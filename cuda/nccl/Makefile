@@ -1,5 +1,5 @@
 NVCC=nvcc
-NVCCFLAGS=--use_fast_math
+NVCCFLAGS= -std=c++11 --use_fast_math -arch=sm_35
 
 INC=-I$(HOME)/software/nccl/build/include
 LIB=-L$(HOME)/software/nccl/build/lib
