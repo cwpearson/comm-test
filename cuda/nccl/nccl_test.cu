@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <algorithm>
 
 #include <nccl.h>
 
@@ -52,63 +53,62 @@ int main(int argc, char* argv[]) {
 
   // Data that will be on each gpu
   std::vector<std::vector<double>> test_data(nGPUs, std::vector<double>(BUFFER_SIZE, 1.0));
-  std::vector<double> test_results(nGPUs);
+  std::vector<std::vector<double>> test_results(nGPUs, std::vector<double>(BUFFER_SIZE, 1.0));
   std::cout << "Allocated host data" << std::endl;
 
-  // associate all devices with rank 0
+  // associate all devices with corresponding rank
   std::vector<ncclComm_t> comms(nGPUs);
-  std::vector<int> devList(nGPUs, 0); 
+  std::vector<int> devList(nGPUs); 
+  std::iota(devList.begin(), devList.end(), 0);
   NCCL_MUST(ncclCommInitAll(&comms[0], nGPUs, &devList[0]));
   std::cout << "Initialized communicators." << std::endl;
 
 
   // Create buffers on GPUs
   std::vector<GPUBuffer> GPUBuffers(nGPUs);
-  for (auto dev = 0; dev < GPUBuffers.size(); ++dev) {
-	  auto &buf = GPUBuffers[dev];
-	  CUDA_MUST(cudaStreamCreate(&buf.stream_));
-	  CUDA_MUST(cudaSetDevice(dev));
-	  CUDA_MUST(cudaMalloc(&buf.send_, BUFFER_SIZE));
-	  CUDA_MUST(cudaMalloc(&buf.recv_, 1)); // one value for all-reduce
+  for (auto dev : devList) {
+    auto &buf = GPUBuffers[dev];
+    CUDA_MUST(cudaStreamCreate(&buf.stream_));
+    CUDA_MUST(cudaSetDevice(dev));
+    CUDA_MUST(cudaMalloc(&buf.send_, sizeof(double) * BUFFER_SIZE));
+    CUDA_MUST(cudaMalloc(&buf.recv_, sizeof(double) * BUFFER_SIZE)); // one value for all-reduce
   }
   std::cout << "Created buffers" << std::endl;
 
   // Copy test data to GPUs
-  for (auto i = 0; i < GPUBuffers.size(); ++i) {
-    auto &buf = GPUBuffers[i];
-    fprintf(stderr, "%d) %p <--(%lu)-- %p\n", i, buf.send_, test_data[i].size(), &test_data[i][0]);
-    CUDA_MUST(cudaSetDevice(i));
+  for (auto dev : devList) {
+    auto &buf = GPUBuffers[dev];
+    CUDA_MUST(cudaSetDevice(dev));
     CUDA_MUST(cudaMemcpy(buf.send_, 
-			 &test_data[i][0], 
-			 sizeof(double)*test_data[i].size(), 
+			 &test_data[dev][0], 
+			 sizeof(double)*test_data[dev].size(), 
 			 cudaMemcpyHostToDevice)
 	     );
   }
   std::cout << "Copied H2D" << std::endl;
 
-  for(int i=0; i<nGPUs; ++i) {
-    cudaSetDevice(i); // Correct device must be set
-                      // prior to each collective call.
-    auto &buf = GPUBuffers[i];
-    ncclAllReduce(buf.send_, buf.recv_, BUFFER_SIZE,
-        ncclDouble, ncclSum, comms[i], buf.stream_);
+  for (auto i = 0; i < devList.size(); ++i) {
+    const auto dev = devList[i];
+    CUDA_MUST(cudaSetDevice(dev)); // Correct device must be set prior to each collective call.
+    auto &buf = GPUBuffers[dev];
+    NCCL_MUST(ncclAllReduce(buf.send_, buf.recv_, BUFFER_SIZE,
+        ncclDouble, ncclSum, comms[i], buf.stream_));
   }
+  std::cout << "Did allreduce" << std::endl;
+
 
   // Check results!
-  for (auto i = 0; i < GPUBuffers.size(); ++i) {
-    auto &buf = GPUBuffers[i];
-    CUDA_MUST(cudaSetDevice(i));
-    CUDA_MUST(cudaMemcpy(&test_results[i],
+  for (auto dev : devList) {
+    auto &buf = GPUBuffers[dev];
+    CUDA_MUST(cudaSetDevice(dev));
+    CUDA_MUST(cudaMemcpy(&test_results[dev],
 			 buf.recv_, 
-			 sizeof(double), 
+			 sizeof(double)*test_data[dev].size(), 
 			 cudaMemcpyDeviceToHost)
 	     );
   }
+  std::cout << "Copied D2H" << std::endl;
 
-  for (const auto &e : test_results) {
-	  std::cout << e << " ";
-  }
-  std::cout <<std::endl;
 
 
   for (auto &buf : GPUBuffers) {
@@ -116,5 +116,6 @@ int main(int argc, char* argv[]) {
 	  CUDA_MUST(cudaFree(buf.send_));
 	  CUDA_MUST(cudaFree(buf.recv_));
   }
+  std::cout << "Cleaned up" << std::endl;
 }
 
