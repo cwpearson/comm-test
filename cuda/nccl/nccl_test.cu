@@ -52,8 +52,8 @@ int main(int argc, char* argv[]) {
   }
 
   // Data that will be on each gpu
-  std::vector<std::vector<double>> test_data(nGPUs, std::vector<double>(BUFFER_SIZE, 1.0));
-  std::vector<std::vector<double>> test_results(nGPUs, std::vector<double>(BUFFER_SIZE, 1.0));
+  std::vector<std::vector<double>> test_data(   nGPUs, std::vector<double>(BUFFER_SIZE, 1.0));
+  std::vector<std::vector<double>> test_results(nGPUs, std::vector<double>(BUFFER_SIZE));
   std::cout << "Allocated host data" << std::endl;
 
   // associate all devices with corresponding rank
@@ -68,8 +68,8 @@ int main(int argc, char* argv[]) {
   std::vector<GPUBuffer> GPUBuffers(nGPUs);
   for (auto dev : devList) {
     auto &buf = GPUBuffers[dev];
-    CUDA_MUST(cudaStreamCreate(&buf.stream_));
     CUDA_MUST(cudaSetDevice(dev));
+    CUDA_MUST(cudaStreamCreate(&buf.stream_));
     CUDA_MUST(cudaMalloc(&buf.send_, sizeof(double) * BUFFER_SIZE));
     CUDA_MUST(cudaMalloc(&buf.recv_, sizeof(double) * BUFFER_SIZE)); // one value for all-reduce
   }
