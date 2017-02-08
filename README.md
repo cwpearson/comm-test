@@ -1,8 +1,9 @@
-# Purpose
+# cuda-test
 
-Simple code to get CUDA device properties and launch a kernel. Checks for errors.
+Code to get CUDA device properties and launch a kernel.
+Checks that CUDA and GPUs are set up properly
 
     mkdir build && cd build
     cmake ..
     make
-    ./devquery
+    ./cuda-test

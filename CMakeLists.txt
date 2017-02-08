@@ -1,4 +1,4 @@
-project (devicequery)
+project (cudatest)
 
 # Lowest supported cmake compatible with cmake 3.5
 cmake_minimum_required(VERSION 2.4)
@@ -10,4 +10,4 @@ endif(COMMAND cmake_policy)
 
 find_package(CUDA REQUIRED)
 
-cuda_add_executable (devquery device_query.cu)
+cuda_add_executable (cuda-test cuda_test.cu)
