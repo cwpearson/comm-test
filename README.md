@@ -7,3 +7,14 @@ Checks that CUDA and GPUs are set up properly
     cmake ..
     make
     ./cuda-test
+
+## Feature Wishlist
+
+* ~~Build with NVCC~~
+* ~~Device query~~
+* ~~Kernel launch~~
+* ~~Multiple devices~~
+* Build with Clang
+* nvprof
+* cudnn
+* cublas 
