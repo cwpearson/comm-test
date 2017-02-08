@@ -51,12 +51,14 @@ int main(int argc, char **argv) {
            deviceProp.maxGridSize[0], deviceProp.maxGridSize[1],
            deviceProp.maxGridSize[2]);
     printf("  Warp size: %d\n", deviceProp.warpSize);
-  }
 
-  kernel<<<1, 1>>>(0); // test kernel launch
-  gpuErrchk(cudaPeekAtLastError());
-  gpuErrchk(cudaDeviceSynchronize());
-  printf("If you're reading this message, the kernel launched successfully!\n");
+    cudaSetDevice(dev);
+    printf("  Launching test kernel...");
+    kernel<<<1, 1>>>(0); // test kernel launch
+    gpuErrchk(cudaPeekAtLastError());
+    gpuErrchk(cudaDeviceSynchronize());
+    printf("Success!\n");
+  }
 
   return 0;
 }
