@@ -3,14 +3,14 @@
 Code to get CUDA device properties and launch a kernel.
 Checks that CUDA and GPUs are set up properly
 
-    mkdir build && cd build
+    cd build
     cmake ..
     make
     ./cuda-test
 
 ## Profiling
 
-    mkdir build && cd build
+    cd build
     cmake ..
     make
     ./profile.sh ./cuda-test
