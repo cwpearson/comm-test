@@ -36,6 +36,6 @@ $(BUILDDIR)/%.o: $(SRCDIR)/%.cu
 	$(NVCC) $(NVCCFLAGS) $(INC) -c -o $@ $<
 
 clean:
-	$(RM) -rf $(BUILDDIR) $(LIBDIR) $(TARGET)
+	$(RM) -rf $(BUILDDIR) $(TARGET)
 
 .PHONY: clean
