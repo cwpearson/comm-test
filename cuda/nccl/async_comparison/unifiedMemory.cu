@@ -85,8 +85,15 @@ int main(int argc, char **argv)
   checkCuda( cudaMallocHost((void**)&a, bytes) );      // host pinned
   checkCuda( cudaMalloc((void**)&d_a, bytes) ); // device  
  
-  checkCuda( cudaMallocManaged((void**)&a_manage, bytes) );      // host pinned
-  checkCuda( cudaMallocManaged((void**)&d_a_manage, bytes) ); // device
+  cudaError_t a_allocation = checkCuda( cudaMallocManaged(&a_manage, bytes) );      // host pinned
+  cudaError_t d_a_allocation = checkCuda( cudaMallocManaged(&d_a_manage, bytes) ); // device
+  //d_a_manage = (float *)malloc(bytes);
+
+  if (a_allocation != cudaSuccess)
+	printf("Error One: %s\n", cudaGetErrorString(a_allocation));
+
+  if (d_a_allocation != cudaSuccess)
+	printf("Error Two: %s\n", cudaGetErrorString(d_a_allocation)); 
 
   float ms; // elapsed time in milliseconds
   
@@ -95,7 +102,8 @@ int main(int argc, char **argv)
   checkCuda( cudaEventCreate(&startEvent) );
   checkCuda( cudaEventCreate(&stopEvent) );
   checkCuda( cudaEventCreate(&dummyEvent) );
-  
+  cudaEventCreate(&startEventUnified);
+  cudaEventCreate(&stopEventUnified); 
   // baseline case - sequential transfer and execute
   memset(a, 0, bytes);
   checkCuda( cudaEventRecord(startEvent,0) );
@@ -109,21 +117,26 @@ int main(int argc, char **argv)
   printf("  max error: %e\n", maxError(a, n));
 
   //Unified memory speed test
+  float msTwo = 7;
   memset(d_a_manage, 0, bytes);
   checkCuda( cudaEventRecord(startEventUnified,0) );
   kernel<<<n/blockSize, blockSize, 0>>>(d_a_manage, 0);
-
-
+  cudaError_t err = cudaGetLastError();
   checkCuda( cudaEventRecord(stopEventUnified, 0) );
   checkCuda( cudaEventSynchronize(stopEventUnified) );
-  checkCuda( cudaEventElapsedTime(&ms, startEventUnified, stopEventUnified) );
-  printf("Time for unified transfer and execute (ms): %f\n", ms);
+  cudaError_t error = checkCuda( cudaEventElapsedTime(&msTwo, startEventUnified, stopEventUnified) );
+  if (error != cudaSuccess)
+	printf("Error: %s\n", cudaGetErrorString(error));
+
+  printf("Time for unified transfer and execute (ms): %f\n", msTwo);
   printf("  max error: %e\n", maxError(d_a_manage, n));
 
   // cleanup
   checkCuda( cudaEventDestroy(startEvent) );
   checkCuda( cudaEventDestroy(stopEvent) );
   checkCuda( cudaEventDestroy(dummyEvent) );
+  checkCuda( cudaEventDestroy(startEventUnified));
+  checkCuda( cudaEventDestroy(stopEventUnified));
   cudaFree(d_a);
   cudaFreeHost(a);
 
