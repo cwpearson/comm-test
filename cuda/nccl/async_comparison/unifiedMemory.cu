@@ -68,7 +68,10 @@ int main(int argc, char **argv)
   const int nByteSize = n * sizeof(float);
   const int streamBytes = streamSize * sizeof(float);
   const int bytes = n * sizeof(float);
-   
+
+  float* a_manage;
+  float* d_a_manage;  
+ 
   int devId = 0;
   if (argc > 1) devId = atoi(argv[1]);
 
@@ -80,10 +83,11 @@ int main(int argc, char **argv)
   // allocate pinned host memory and device memory
   float *a, *d_a;
   checkCuda( cudaMallocHost((void**)&a, bytes) );      // host pinned
-  checkCuda( cudaMalloc((void**)&d_a, bytes) ); // device
-   
+  checkCuda( cudaMalloc((void**)&d_a, bytes) ); // device  
+ 
   checkCuda( cudaMallocManaged((void**)&a_manage, bytes) );      // host pinned
   checkCuda( cudaMallocManaged((void**)&d_a_manage, bytes) ); // device
+//   d_a_manage = (float *) malloc(bytes);
 
 
   float ms; // elapsed time in milliseconds
@@ -111,14 +115,14 @@ int main(int argc, char **argv)
   // loop over copy, loop over kernel, loop over copy
   memset(d_a_manage, 0, bytes);
   checkCuda( cudaEventRecord(startEvent,0) );
-  kernel<<<n/blockSize, blockSize, 0>>>(d_a_manage, offset);
-  cudaDeviceSyncronize();
+  kernel<<<n/blockSize, blockSize, 0>>>(d_a_manage, 0);
+
 
   checkCuda( cudaEventRecord(stopEvent, 0) );
   checkCuda( cudaEventSynchronize(stopEvent) );
   checkCuda( cudaEventElapsedTime(&ms, startEvent, stopEvent) );
   printf("Time for unified transfer and execute (ms): %f\n", ms);
-  printf("  max error: %e\n", maxError(a, n));
+  printf("  max error: %e\n", maxError(d_a_manage, n));
 
   // cleanup
   checkCuda( cudaEventDestroy(startEvent) );
