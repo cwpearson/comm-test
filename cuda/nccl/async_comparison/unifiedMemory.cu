@@ -82,15 +82,15 @@ int main(int argc, char **argv)
   checkCuda( cudaMallocHost((void**)&a, bytes) );      // host pinned
   checkCuda( cudaMalloc((void**)&d_a, bytes) ); // device
    
-  checkCuda( cudaMallocManaged((void**)&a_manage, bytes) );      // host pinned
-  checkCuda( cudaMallocManaged((void**)&d_a_manage, bytes) ); // device
+//   checkCuda( cudaMallocManaged((void**)&a_manage, bytes) );      // host pinned
+//   checkCuda( cudaMallocManaged((void**)&d_a_manage, bytes) ); // device
+d_a_manage = (int *)malloc
 
 
   float ms; // elapsed time in milliseconds
   
   // create events and streams
-  cudaEvent_t startEvent, stopEvent, dummyEvent;
-  cudaStream_t stream[nStreams];
+  cudaEvent_t startEvent, stopEvent, dummyEvent, startEventTwo, stopEventTwo;
   checkCuda( cudaEventCreate(&startEvent) );
   checkCuda( cudaEventCreate(&stopEvent) );
   checkCuda( cudaEventCreate(&dummyEvent) );
@@ -118,7 +118,7 @@ int main(int argc, char **argv)
   checkCuda( cudaEventSynchronize(stopEvent) );
   checkCuda( cudaEventElapsedTime(&ms, startEvent, stopEvent) );
   printf("Time for unified transfer and execute (ms): %f\n", ms);
-  printf("  max error: %e\n", maxError(a, n));
+  printf("  max error: %e\n", maxError(d_a_manage, n));
 
   // cleanup
   checkCuda( cudaEventDestroy(startEvent) );
