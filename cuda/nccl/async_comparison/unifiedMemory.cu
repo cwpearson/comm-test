@@ -68,7 +68,10 @@ int main(int argc, char **argv)
   const int nByteSize = n * sizeof(float);
   const int streamBytes = streamSize * sizeof(float);
   const int bytes = n * sizeof(float);
-   
+
+  float* a_manage;
+  float* d_a_manage;  
+ 
   int devId = 0;
   if (argc > 1) devId = atoi(argv[1]);
 
@@ -80,17 +83,15 @@ int main(int argc, char **argv)
   // allocate pinned host memory and device memory
   float *a, *d_a;
   checkCuda( cudaMallocHost((void**)&a, bytes) );      // host pinned
-  checkCuda( cudaMalloc((void**)&d_a, bytes) ); // device
-   
-//   checkCuda( cudaMallocManaged((void**)&a_manage, bytes) );      // host pinned
-//   checkCuda( cudaMallocManaged((void**)&d_a_manage, bytes) ); // device
-d_a_manage = (int *)malloc
-
+  checkCuda( cudaMalloc((void**)&d_a, bytes) ); // device  
+ 
+  checkCuda( cudaMallocManaged((void**)&a_manage, bytes) );      // host pinned
+  checkCuda( cudaMallocManaged((void**)&d_a_manage, bytes) ); // device
 
   float ms; // elapsed time in milliseconds
   
   // create events and streams
-  cudaEvent_t startEvent, stopEvent, dummyEvent, startEventTwo, stopEventTwo;
+  cudaEvent_t startEvent, stopEvent, dummyEvent, startEventUnified, stopEventUnified;
   checkCuda( cudaEventCreate(&startEvent) );
   checkCuda( cudaEventCreate(&stopEvent) );
   checkCuda( cudaEventCreate(&dummyEvent) );
@@ -107,16 +108,15 @@ d_a_manage = (int *)malloc
   printf("Time for sequential transfer and execute (ms): %f\n", ms);
   printf("  max error: %e\n", maxError(a, n));
 
-  // asynchronous version 2: 
-  // loop over copy, loop over kernel, loop over copy
+  //Unified memory speed test
   memset(d_a_manage, 0, bytes);
-  checkCuda( cudaEventRecord(startEvent,0) );
-  kernel<<<n/blockSize, blockSize, 0>>>(d_a_manage, offset);
-  cudaDeviceSyncronize();
+  checkCuda( cudaEventRecord(startEventUnified,0) );
+  kernel<<<n/blockSize, blockSize, 0>>>(d_a_manage, 0);
 
-  checkCuda( cudaEventRecord(stopEvent, 0) );
-  checkCuda( cudaEventSynchronize(stopEvent) );
-  checkCuda( cudaEventElapsedTime(&ms, startEvent, stopEvent) );
+
+  checkCuda( cudaEventRecord(stopEventUnified, 0) );
+  checkCuda( cudaEventSynchronize(stopEventUnified) );
+  checkCuda( cudaEventElapsedTime(&ms, startEventUnified, stopEventUnified) );
   printf("Time for unified transfer and execute (ms): %f\n", ms);
   printf("  max error: %e\n", maxError(d_a_manage, n));
 
