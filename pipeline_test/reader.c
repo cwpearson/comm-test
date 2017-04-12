@@ -14,7 +14,7 @@ int main()
     /* open, read, and display the message from the FIFO */
     fd = open(myfifo, O_RDONLY);
     read(fd, buf, MAX_BUF);
-    printf("Received: %s\n", buf);
+    printf("Received: %s\n", *buf);
     close(fd);
 
     return 0;
