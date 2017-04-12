@@ -4,9 +4,9 @@ NVCCFLAGS= -std=c++11 --use_fast_math -arch=sm_35
 INC=-I$(HOME)/software/nccl/build/include
 LIB=-L$(HOME)/software/nccl/build/lib
 
-all: cuda_metrics_test
+all: dataOverlapTest
 
-cuda_metrics_test: dataOverlapTest.cu
+dataOverlapTest: unifiedMemory.cu
 	$(NVCC) $(NVCCFLAGS) $(INC) $(LIB) $^ -o $@
 
 clean:
