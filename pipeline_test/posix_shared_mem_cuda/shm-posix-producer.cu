@@ -57,19 +57,26 @@ int main(void)
     exit(1);
   }
 
+  cudaMallocManaged((void **)&shm_base, 4096);
+
+
   /**
    * Write to the mapped shared memory region.
    *
    * We increment the value of ptr after each write, but we
    * are ignoring the possibility that sprintf() fails.
    */
-  display("prod", shm_base, 64);
-  ptr = shm_base;
-  ptr += sprintf(ptr, "%s", message0);
-  ptr += sprintf(ptr, "%s", message1);
-  ptr += sprintf(ptr, "%s", message2);
-  ptr += sprintf(ptr, "%s", msg_end);
-  display("prod", shm_base, 64);
+   float* x;
+   *x = 5;
+   cudaMalloc(&((void **)(shm_base)), 4096);
+   cudaMemcpy(shm_base, x, sizeof(x), cudaMemcpyHostToDevice);
+  // display("prod", shm_base, 64);
+  // ptr = shm_base;
+  // ptr += sprintf(ptr, "%s", message0);
+  // ptr += sprintf(ptr, "%s", message1);
+  // ptr += sprintf(ptr, "%s", message2);
+  // ptr += sprintf(ptr, "%s", msg_end);
+  // display("prod", shm_base, 64);
 
   /* remove the mapped memory segment from the address space of the process */
   if (munmap(shm_base, SIZE) == -1) {
