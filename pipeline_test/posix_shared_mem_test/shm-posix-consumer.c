@@ -49,7 +49,7 @@ int main(void)
 
   /* read from the mapped shared memory segment */
   float y;
-  cudaMemcpy(&y, shm_base, cudaMemcpyDeviceToHost, sizeof(float));
+  cudaMemcpy(&y, shm_base, sizeof(float), cudaMemcpyDeviceToHost);
   printf("%d", y);
   // display("cons", shm_base, 64);	// first as bytes, then as a string
   // printf("%s", shm_base);
