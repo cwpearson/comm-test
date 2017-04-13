@@ -48,8 +48,11 @@ int main(void)
   }
 
   /* read from the mapped shared memory segment */
-  display("cons", shm_base, 64);	// first as bytes, then as a string
-  printf("%s", shm_base);
+  float y;
+  cudaMemcpy(&y, shm_base, cudaMemcpyDeviceToHost, sizeof(float));
+  printf("%d", y);
+  // display("cons", shm_base, 64);	// first as bytes, then as a string
+  // printf("%s", shm_base);
 
   /* remove the mapped shared memory segment from the address space of the process */
   if (munmap(shm_base, SIZE) == -1) {
