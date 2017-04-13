@@ -3,7 +3,7 @@
 # this must use GNU Make ("make" on Linux and Mac OS X, "gmake" on Solaris)
 
 # compiler options -- C99 with warnings
-OPT_GCC = -std=c99 -Wall -Wextra -Wcpp
+OPT_GCC = -g -G 
 
 # compiler options and libraries for Linux, Mac OS X or Solaris
 
@@ -12,11 +12,11 @@ LIB = -lrt
 
 all: cons prod
 
-cons: shm-posix-consumer.c
-	nvcc $(OPT_GCC) $(OPT) -o cons shm-posix-consumer.c  $(LIB)
+cons: shm-posix-consumer.cu
+	nvcc $(OPT_GCC) $(OPT) -o cons shm-posix-consumer.cu  $(LIB)
 
-prod: shm-posix-producer.c
-	nvcc $(OPT_GCC) $(OPT) -o prod shm-posix-producer.c  $(LIB)
+prod: shm-posix-producer.cu
+	nvcc $(OPT_GCC) $(OPT) -o prod shm-posix-producer.cu  $(LIB)
 
 run: cons prod
 	./prod
