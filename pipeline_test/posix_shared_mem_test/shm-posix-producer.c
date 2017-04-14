@@ -66,8 +66,8 @@ int main(void)
    */
    float* x;
    *x = 5;
-   cudaMalloc(&((void **)(shm_base)), 4096)
-   cudaMemcpy(shm_base, x, sizeof(x), cudaMemcpyHostToDevice)
+   cudaMalloc(&((void **)(shm_base)), 4096);
+   cudaMemcpy(shm_base, x, sizeof(x), cudaMemcpyHostToDevice);
   // display("prod", shm_base, 64);
   // ptr = shm_base;
   // ptr += sprintf(ptr, "%s", message0);

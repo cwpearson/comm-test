@@ -40,7 +40,7 @@ int main(void)
   }
 
   /* map the shared memory segment to the address space of the process */
-  shm_base = mmap(0, SIZE, PROT_READ, MAP_SHARED, shm_fd, 0);
+  shm_base = (char *)mmap(0, SIZE, PROT_READ, MAP_SHARED, shm_fd, 0);
   if (shm_base == MAP_FAILED) {
     printf("cons: Map failed: %s\n", strerror(errno));
     // close and unlink?
@@ -48,8 +48,11 @@ int main(void)
   }
 
   /* read from the mapped shared memory segment */
-  display("cons", shm_base, 64);	// first as bytes, then as a string
-  printf("%s", shm_base);
+  float y;
+  cudaMemcpy(&y, shm_base, sizeof(float), cudaMemcpyDeviceToHost);
+  printf("%f", y);
+  // display("cons", shm_base, 64);	// first as bytes, then as a string
+  // printf("%s", shm_base);
 
   /* remove the mapped shared memory segment from the address space of the process */
   if (munmap(shm_base, SIZE) == -1) {

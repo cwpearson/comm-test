@@ -50,12 +50,13 @@ int main(void)
   ftruncate(shm_fd, SIZE);
 
   /* map the shared memory segment to the address space of the process */
-  shm_base = mmap(0, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+  shm_base = (char*)mmap(0, SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
   if (shm_base == MAP_FAILED) {
     printf("prod: Map failed: %s\n", strerror(errno));
     // close and shm_unlink?
     exit(1);
   }
+
 
   /**
    * Write to the mapped shared memory region.
@@ -63,13 +64,17 @@ int main(void)
    * We increment the value of ptr after each write, but we
    * are ignoring the possibility that sprintf() fails.
    */
-  display("prod", shm_base, 64);
-  ptr = shm_base;
-  ptr += sprintf(ptr, "%s", message0);
-  ptr += sprintf(ptr, "%s", message1);
-  ptr += sprintf(ptr, "%s", message2);
-  ptr += sprintf(ptr, "%s", msg_end);
-  display("prod", shm_base, 64);
+   float* x;
+   *x = 5;
+   cudaMallocManaged(((void **)(shm_base)), 4096);
+   cudaMemcpy(shm_base, x, sizeof(x), cudaMemcpyHostToDevice);
+  // display("prod", shm_base, 64);
+  // ptr = shm_base;
+  // ptr += sprintf(ptr, "%s", message0);
+  // ptr += sprintf(ptr, "%s", message1);
+  // ptr += sprintf(ptr, "%s", message2);
+  // ptr += sprintf(ptr, "%s", msg_end);
+  // display("prod", shm_base, 64);
 
   /* remove the mapped memory segment from the address space of the process */
   if (munmap(shm_base, SIZE) == -1) {
